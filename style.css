@@ -1,8 +1,21 @@
 /* Googleフォント */
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-/* アイテムのフォント＆影 */
+/* アイテムの共通スタイル */
 .item {
   font-family: 'Press Start 2P', cursive;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+}
+
+/* スライムの見た目 */
+.slime-blob {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle at top center,
+                              #a0ff8f, #10c000);
+  border-radius: 50%;
+  transform-origin: center bottom;
+  pointer-events: none;
+  z-index: 30;
 }

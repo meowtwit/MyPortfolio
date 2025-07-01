@@ -1,23 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stylish Zero-G Space Demo</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Modular Space App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://unpkg.com/planck-js@1.3.0/dist/planck.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
 </head>
 <body class="relative overflow-hidden">
-  <!-- ① 宇宙っぽい星だけ -->
+  <!-- 背景 -->
   <canvas id="cosmos"      class="absolute inset-0 z-0 pointer-events-none"></canvas>
-  <!-- ② 青紫流体背景（消さない） -->
   <canvas id="starfield"   class="absolute inset-0 z-5 pointer-events-none"></canvas>
-  <!-- ③ ゆるやかピンク滲み -->
-  <canvas id="paintCanvas" class="absolute inset-0 z-10 pointer-events-none"></canvas>
-  <!-- ④ 無重力アイテム群 -->
-  <div   id="container"    class="relative w-full h-full z-20"></div>
-
-  <script src="https://unpkg.com/planck-js@1.3.0/dist/planck.min.js"></script>
-  <script src="script.js"></script>
+  <canvas id="paintCanvas" class="absolute inset-0 z-15 pointer-events-none"></canvas>
+  <!-- アイテム群 -->
+  <div id="container" class="relative w-full h-full z-20"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
