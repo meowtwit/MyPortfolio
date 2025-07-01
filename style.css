@@ -19,3 +19,4 @@
   pointer-events: none;
   z-index: 30;
 }
+.cat-item { pointer-events:auto; }

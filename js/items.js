@@ -3,6 +3,7 @@
 import { world } from './physics.js';
 import { handleProgramming, redBodies as progRedBodies } from './categories/programming.js';
 import { handleDesign } from './categories/design.js';
+import { handleProjects, catBodies } from './categories/projects.js';
 
 const Vec2      = window.planck.Vec2;
 const SCALE     = 30;
@@ -83,8 +84,10 @@ export function initItems() {
         handleProgramming(bodies, container, cw, ch);
       } else if (label === 'design') {
         handleDesign();
+      } else if (label === 'projects') {
+        handleProjects(container, cw, ch);
       }
-      // projects, dance はまだ実装なし
+      // dance はまだ実装なし
     });
   }
 }
@@ -95,6 +98,13 @@ export function initItems() {
 export function updateItems() {
   if (progRedBodies.length > 0) {
     progRedBodies.forEach(o => {
+      const p = o.body.getPosition();
+      o.el.style.transform =
+        `translate(${p.x*SCALE - o.sizePx/2}px, ${p.y*SCALE - o.sizePx/2}px)`+
+        ` rotate(${o.body.getAngle()}rad)`;
+    });
+  } else if (catBodies.length > 0) {
+    catBodies.forEach(o => {
       const p = o.body.getPosition();
       o.el.style.transform =
         `translate(${p.x*SCALE - o.sizePx/2}px, ${p.y*SCALE - o.sizePx/2}px)`+
