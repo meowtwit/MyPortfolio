@@ -1,6 +1,7 @@
 // js/categories/programming.js
 
 import { world, createWalls, resetWorld } from '../physics.js';
+import { showDetail } from '../details.js';
 const Vec2  = window.planck.Vec2;
 const SCALE = 30;
 
@@ -97,6 +98,10 @@ export function handleProgramming(bodies, container, cw, ch) {
           (Math.random() - 0.5) * 2
         );
         body.applyLinearImpulse(j, body.getPosition());
+      });
+
+      el.addEventListener('click', () => {
+        showDetail(`Programming ${i+1}`, 'Detail coming soon');
       });
 
       redBodies.push({ el, body, sizePx });

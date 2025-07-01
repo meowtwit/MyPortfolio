@@ -1,4 +1,5 @@
 // js/categories/design.js
+import { showDetail } from '../details.js';
 
 /**
  * “design” クリック時のスライム演出 (GSAP)
@@ -20,4 +21,8 @@ export function handleDesign() {
     .to(blob, { duration:1, y: targetY+size, ease:'bounce.out' })
     .to(blob, { duration:0.6, scaleY:0.4, scaleX:1.6, ease:'elastic.out(1,0.4)' }, '>-0.2')
     .to(blob, { duration:2, opacity:0, onComplete:()=>blob.remove() }, '+=1');
+
+  blob.addEventListener('click', () => {
+    showDetail('Design', 'Slime animation example');
+  });
 }
