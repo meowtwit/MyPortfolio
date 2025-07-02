@@ -1,19 +1,21 @@
 // js/items.js
 
-import { world } from './physics.js';
+import { world, groundBody } from './physics.js';
 import {
   handleProgramming,
   redBodies as progRedBodies
 } from './categories/programming.js';
 import { handleDesign } from './categories/design.js';
 
-const Vec2      = window.planck.Vec2;
-const SCALE     = 30;
-const cw        = window.innerWidth;
-const ch        = window.innerHeight;
+const planck   = window.planck;
+const Vec2     = planck.Vec2;
+const SCALE    = 30;
+const cw       = window.innerWidth;
+const ch       = window.innerHeight;
 const container = document.getElementById('container');
 
 let bodies = [];
+let mouseJoint = null;
 
 /**
  * 初期アイテムを無重力＋壁内で浮遊させる
@@ -24,9 +26,9 @@ export function initItems() {
   container.innerHTML = '';
 
   const categories = ['programming','design','projects','dance'];
-  categories.forEach((label, i) => {
-    const el    = document.createElement('div');
-    const size  = 400;
+  categories.forEach(label => {
+    const el   = document.createElement('div');
+    const size = 400;
 
     // ■ スタイル設定
     Object.assign(el.style, {
@@ -49,15 +51,15 @@ export function initItems() {
     el.textContent = label;
     container.appendChild(el);
 
-    // ■ Planck ボディ生成
+    // ■ Planck.js ボディ生成
     const body = world.createDynamicBody({
       position: Vec2(
-        (Math.random()*(cw-size) + size/2)/SCALE,
-        (Math.random()*(ch-size) + size/2)/SCALE
+        (Math.random() * (cw - size) + size/2) / SCALE,
+        (Math.random() * (ch - size) + size/2) / SCALE
       )
     });
     body.createFixture(
-      window.planck.Box((size/2)/SCALE, (size/2)/SCALE),
+      planck.Box((size/2)/SCALE, (size/2)/SCALE),
       { density:1, friction:0, restitution:1 }
     );
     bodies.push({ el, body, size });
@@ -78,18 +80,67 @@ export function initItems() {
       );
     });
 
-    // ■ クリックでプログラミング or デザイン演出
+    // ■ クリックで programming or design
     el.addEventListener('click', e => {
-      console.log('clicked:', label);
       if (label === 'programming') {
-        // クリック位置（px）を handleProgramming に渡す
-        handleProgramming(bodies, container, cw, ch, e.clientX, e.clientY);
+        handleProgramming(
+          bodies, container, cw, ch,
+          e.clientX, e.clientY
+        );
       } else if (label === 'design') {
         handleDesign();
       }
       // projects, dance はまだ実装なし...
     });
   });
+}
+
+/** 
+ * 赤ブロックのみドラッグ開始 
+ */
+function onMouseDown(e) {
+  // ターゲットが赤ブロック要素かどうか
+  const el = e.target;
+  if (!el.classList.contains('bg-red-600')) return;
+  // 対応する redBodies エントリを探す
+  const entry = progRedBodies.find(o => o.el === el);
+  if (!entry) return;
+
+  // 既存の Joint を破棄
+  if (mouseJoint) {
+    world.destroyJoint(mouseJoint);
+    mouseJoint = null;
+  }
+  // マウス位置をワールド座標に変換
+  const target = Vec2(e.clientX / SCALE, e.clientY / SCALE);
+  // MouseJoint 定義
+  const md = {
+    bodyA: groundBody,
+    bodyB: entry.body,
+    target,
+    maxForce: 1000 * entry.body.getMass(),
+    collideConnected: true
+  };
+  mouseJoint = world.createJoint(new planck.MouseJoint(md));
+
+  // グローバルにムーブ／アップを登録
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+}
+
+/** ドラッグ中のマウス移動でターゲット更新 */
+function onMouseMove(e) {
+  if (!mouseJoint) return;
+  mouseJoint.setTarget(Vec2(e.clientX / SCALE, e.clientY / SCALE));
+}
+
+/** マウスアップでドラッグ終了 */
+function onMouseUp() {
+  if (!mouseJoint) return;
+  world.destroyJoint(mouseJoint);
+  mouseJoint = null;
+  window.removeEventListener('mousemove', onMouseMove);
+  window.removeEventListener('mouseup', onMouseUp);
 }
 
 /**
@@ -105,7 +156,7 @@ export function updateItems() {
         ` rotate(${o.body.getAngle()}rad)`;
     });
   } else {
-    // 通常フェーズ：浮遊アイテムを描画
+    // 通常は浮遊アイテムを描画
     bodies.forEach(o => {
       const p = o.body.getPosition();
       o.el.style.transform =
@@ -114,3 +165,6 @@ export function updateItems() {
     });
   }
 }
+
+// ── 赤ブロックへのドラッグを container に委譲 ──
+container.addEventListener('mousedown', onMouseDown);
