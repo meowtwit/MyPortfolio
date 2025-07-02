@@ -1,58 +1,66 @@
 // js/categories/programming.js
 
-import { world, createWalls, resetWorld } from '../physics.js';
-const Vec2  = window.planck.Vec2;
-const SCALE = 30;
+import { world } from '../physics.js';
+const planck = window.planck;
+const Vec2   = planck.Vec2;
+const SCALE  = 30;
 
-// 描画ループ側で参照する赤ボックス群
 export const redBodies = [];
 
 /**
  * “programming” クリック時の演出
- * @param {{el:HTMLElement, body:planck.Body}[]} bodies
- * @param {HTMLElement} container
- * @param {number} cw
- * @param {number} ch
+ * @param bodies    浮遊アイテム配列
+ * @param container DOM コンテナ
+ * @param cw        ビューポート幅(px)
+ * @param ch        ビューポート高(px)
+ * @param clickX    クリック位置 x (px)
+ * @param clickY    クリック位置 y (px)
  */
-export function handleProgramming(bodies, container, cw, ch) {
+export function handleProgramming(bodies, container, cw, ch, clickX, clickY) {
   console.log('▶ handleProgramming start');
 
-  // 1) 初期アイテムを中央から吹き飛ばし（物理だけ／DOMは残す）
-  const center = Vec2((cw/2)/SCALE, (ch/2)/SCALE);
-  bodies.forEach(({ el, body }) => {
-    if (el.textContent !== 'programming') {
-      const pos = body.getPosition();
-      const dir = Vec2(pos.x - center.x, pos.y - center.y);
-      dir.normalize();
-      body.applyLinearImpulse(dir.mul(200), pos);
+  // 1) 浮遊アイテムをセンサー化して壁判定を無効化
+  bodies.forEach(({ body }) => {
+    for (let f = body.getFixtureList(); f; f = f.getNext()) {
+      f.setSensor(true);
     }
   });
 
-  // 2) 300ms後に「完全切り替え」
+  // 2) 中心から吹き飛ばし
+  const center = Vec2((cw/2)/SCALE, (ch/2)/SCALE);
+  bodies.forEach(({ body }) => {
+    const pos = body.getPosition();
+    const dir = Vec2(pos.x - center.x, pos.y - center.y);
+    dir.normalize();
+    body.applyLinearImpulse(dir.mul(200), pos);
+  });
+
+  // 3) 300ms後に吹き飛びフェーズを終えて赤ボックス生成へ
   setTimeout(() => {
     console.log('▶ handleProgramming phase2');
 
-    // 2-1) ワールドをまるごとリセット（重力30, 壁再生成）
-    resetWorld(Vec2(0, 30));
-
-    // 2-2) DOMクリア
-    container.innerHTML = '';
-
-    // 2-3) bodies 配列をクリア
+    // 3-1) 古い浮遊ボディをすべて削除
+    bodies.forEach(({ body }) => world.destroyBody(body));
     bodies.length = 0;
 
-    // 2-4) redBodies 配列をクリア
+    // 3-2) 下向き重力をセット
+    world.setGravity(Vec2(0, 30));
+
+    // 3-3) DOMクリア＆赤ボックス配列リセット
+    container.innerHTML = '';
     redBodies.length = 0;
 
-    // 2-5) 赤ボックス群を改めて生成
-    const count   = 5;
-    const sizePx  = 400;
-    const halfM   = (sizePx / 2) / SCALE;
-    const margin  = 50;
-    const spacing = (cw - 2 * margin) / (count - 1);
+    // 3-4) 赤ボックスを「クリック位置」から分裂して生成
+    const count     = 5;
+    const sizePx    = 400;
+    const halfM     = (sizePx/2) / SCALE;
+    const originX   = clickX / SCALE;
+    const originY   = clickY / SCALE;
+    const baseSpeed = 8;      // 分裂時の初速
+    const offsetR   = 1;      // 発生位置オフセットm
 
     for (let i = 0; i < count; i++) {
-      // — DOM要素
+      // — DOM要素生成 —
       const el = document.createElement('div');
       Object.assign(el.style, {
         width:         `${sizePx}px`,
@@ -71,35 +79,38 @@ export function handleProgramming(bodies, container, cw, ch) {
       el.textContent = `${i+1}`;
       container.appendChild(el);
 
-      // — Physics Body
-      const xPx = margin + spacing * i;
-      const yPx = 50;
-      const body = world.createDynamicBody({
-        position: Vec2(xPx / SCALE, yPx / SCALE)
-      });
+      // — 発生角度を均等分割 + ランダムずらし —
+      const baseAngle = (Math.PI * 2 / count) * i;
+      const angle     = baseAngle + (Math.random()*0.2 - 0.1);
+
+      // — 発生位置を少しオフセット —
+      const spawnPos = Vec2(
+        originX + Math.cos(angle) * offsetR,
+        originY + Math.sin(angle) * offsetR
+      );
+
+      // — Physicsボディ生成 —
+      const body = world.createDynamicBody({ position: spawnPos });
       body.createFixture(planck.Box(halfM, halfM), {
-        density:     1,
-        friction:    0.3,
-        restitution: 0.2
+        density:1, friction:0.3, restitution:0.2
       });
 
-      // — 初速アップ
-      const angle = Math.random() * 2 * Math.PI;
+      // — 初速を分裂方向に —
       body.setLinearVelocity(Vec2(
-        Math.cos(angle) * 5,
-        Math.sin(angle) * 5
+        Math.cos(angle) * baseSpeed,
+        Math.sin(angle) * baseSpeed
       ));
 
-      // — ホバーでミニインパルス
+      // — ホバーでミニインパルス —
       el.addEventListener('mouseenter', () => {
-        const j = Vec2(
+        const imp = Vec2(
           (Math.random() - 0.5) * 2,
           (Math.random() - 0.5) * 2
         );
-        body.applyLinearImpulse(j, body.getPosition());
+        body.applyLinearImpulse(imp, body.getPosition());
       });
 
-      redBodies.push({ el, body, sizePx });
+      redBodies.push({ el, body, size: sizePx });
     }
-  }, 300);
+  }, 0);
 }
